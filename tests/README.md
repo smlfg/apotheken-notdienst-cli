@@ -30,6 +30,7 @@ pytest -q tests/harness
 - `UX06`: README-Schnellstart (Überschrift in den ersten 40 Zeilen) ohne `#`/`$ `-Zeilen und Platzhalter, mit passender Installationszeile und allen Tool-Befehlen als `$ `-Zeile in einer `ux-session`.
 - `UX07`: Schreibende Aktionen fragen im TTY nach `[j/N]`; kein formstep ohne `before_confirm` vor der Bestätigung.
 - `UX08`: Alle `ux-formsteps` werden mit allen `sends`-Feldern in Reihenfolge gesendet (nutzt dieselbe Logik wie `ux_session.py`).
+- `UX09`: Voraussetzungen vor der Bestätigung. (a) In frischem HOME/XDG ohne vorherige Login-Sitzung und ohne `credential_env` darf die schreibende Aktion weder `[j/N]` ausgeben noch formsteps ohne `before_confirm` senden; sie muss auf `<tool> login` verweisen und mit Exit ≠ 0 enden. (b) Im regulären j-Lauf (Login zuerst) müssen alle Felder aus dem Formular des vorherigen formsteps wieder gesendet werden; mit `required` markierte Felder dürfen nicht leer sein.
 
 Exit-Codes: `0` = kein FAIL (SKIP erlaubt), `1` = mindestens ein FAIL,
 `2` = Aufruffehler. `--spec-only` prüft nur `UX01` sowie die statischen Teile
