@@ -1,6 +1,8 @@
 # cli-mcp-template
 Project template for CLIs and MCP servers with the shared test suite
 
+> **Hinweis:** Die Fabrik, die aus dieser Vorlage Werkzeuge baut (Workflow, UX-Gate, Pipeline), liegt jetzt in [smlfg/software-factory](https://github.com/smlfg/software-factory). Die Vorlage selbst bleibt vorerst hier.
+
 ## Schritt 0: UX-Spec zuerst
 
 Der komplette Ablauf steht in [agent-learnings/WORKFLOW.md](https://github.com/smlfg/agent-learnings/blob/main/WORKFLOW.md).
