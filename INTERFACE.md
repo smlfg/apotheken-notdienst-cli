@@ -132,15 +132,16 @@ JSON-Objekt, ohne weitere Ausgaben. Bei Erfolg:
 | Code | Bedeutung |
 |---|---|
 | 0 | Erfolg: Treffer gefunden, Standard-Ort gespeichert/angezeigt, Details gefunden |
-| 1 | Keine Treffer oder lokaler Fehler (z. B. kein Standard-Ort gespeichert, Config unlesbar) |
-| 2 | Aufruf-/Eingabefehler: unbekanntes Unterkommando, ungültiges Datum/Radius/Limit, mehrdeutiger oder unbekannter Ort ohne `--erster` |
+| 1 | Keine Treffer, unbekannter Ort oder lokaler Fehler (z. B. kein Standard-Ort gespeichert, Config unlesbar) |
+| 2 | Aufruf-/Eingabefehler: unbekanntes Unterkommando, ungültiges Datum/Radius/Limit, mehrdeutiger Ort ohne `--erster` |
 | 3 | Netz-/Quellfehler: DNS, Timeout, HTTP ≠ 200, fehlende `cHash`, unerwartetes HTML |
 | 4 | Login nötig (reserviert; dieses Werkzeug braucht nie einen Login) |
 | 130 | Abbruch durch Strg+C/EOF, ohne Traceback |
 
-Ein leerer Trefferfall ist kein Usage-Fehler. Meldet der Server keine Treffer,
-endet der Befehl mit Exit 1 und nennt den nächsten Schritt. Liefert der Server
-eine Vorschlagsliste für einen mehrdeutigen Ort, ist das Exit 2.
+Ein leerer Trefferfall ist kein Usage-Fehler. Meldet der Server keine Treffer
+oder kennt er den Ort nicht, endet der Befehl mit Exit 1 und nennt den nächsten
+Schritt; die Quelle unterscheidet beides nicht. Liefert der Server eine
+Vorschlagsliste für einen mehrdeutigen Ort, ist das Exit 2.
 
 ## Umgebungsvariablen
 
@@ -169,6 +170,9 @@ klaren Meldung mit nächstem Schritt und Exit 2, nie zu einem Traceback.
 - Pro Suchlauf höchstens zwei lesende GETs: zuerst die Formularseite für die
   aktuelle `cHash` und `__trustedProperties`, danach die Extbase-Suche mit den
   Suchfeldern als Query-Parameter.
+- Nur bei einem mehrdeutigen Ort kommt ein weiterer Such-GET für den gewählten
+  Vorschlag hinzu; die Formularseite wird dabei wiederverwendet. Pro Aufruf
+  sind es damit höchstens drei GETs (ein Formular-GET, zwei Such-GETs).
 - `cHash` und versteckte Felder werden nie hart codiert.
 - User-Agent:
   `apotheken-notdienst-cli (+https://github.com/smlfg/apotheken-notdienst-cli)`.

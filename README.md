@@ -60,8 +60,8 @@ notdienst details Greif --json
 | Code | Bedeutung |
 |---|---|
 | 0 | Treffer gefunden bzw. Befehl erfolgreich |
-| 1 | Keine Treffer oder lokaler Fehler (z. B. kein Standard-Ort gespeichert) |
-| 2 | Aufruf-/Eingabefehler, z. B. ungültiges Datum, mehrdeutiger oder unbekannter Ort |
+| 1 | Keine Treffer, unbekannter Ort oder lokaler Fehler (z. B. kein Standard-Ort gespeichert) |
+| 2 | Aufruf-/Eingabefehler, z. B. ungültiges Datum oder mehrdeutiger Ort ohne `--erster` |
 | 3 | Netz-/Quellfehler: nicht erreichbar oder Antwort nicht lesbar |
 | 4 | Login nötig (reserviert; dieses Werkzeug braucht keinen Login) |
 
@@ -71,8 +71,10 @@ nicht bei Strg+C oder EOF.
 ## Datenquelle und Verhalten
 
 Die Suche nutzt die Formularseite für die aktuelle `cHash` und fragt danach die
-Extbase-Suche per GET ab; beides wird nie hart codiert. Pro Aufruf fallen
-höchstens zwei lesende GETs an. Ergebnisse werden 10 Minuten unter
+Extbase-Suche per GET ab; beides wird nie hart codiert. Ein normaler Suchlauf
+kostet zwei lesende GETs (Formular und Suche); bei einem mehrdeutigen Ort kommt
+für den gewählten Vorschlag ein weiterer Such-GET hinzu, die Formularseite wird
+wiederverwendet – höchstens drei GETs pro Aufruf. Ergebnisse werden 10 Minuten unter
 `~/.cache/apotheken-notdienst-cli` zwischengespeichert. Der User-Agent nennt
 die Repo-URL. Es gibt keine schreibenden Web-Aktionen und keinen Login.
 

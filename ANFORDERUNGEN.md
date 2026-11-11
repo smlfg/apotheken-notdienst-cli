@@ -77,5 +77,7 @@ Terminal-Ausgabe stehen in [`docs/UX.md`](docs/UX.md).
 - **Keine Personendaten.** Apothekennamen, Adressen und Telefonnummern sind
   öffentliche Geschäftsdaten. Das Repo enthält keine echten Personendaten,
   keine Secrets und keine Zugangsdaten.
-- **Höflichkeit.** Pro Aufruf höchstens zwei lesende GETs (Formular und Suche),
-  ein Such-Cache von 10 Minuten und ein User-Agent mit Repo-URL.
+- **Höflichkeit.** Pro normalem Suchlauf höchstens zwei lesende GETs (Formular
+  und Suche); nur bei einem mehrdeutigen Ort kommt ein weiterer Such-GET hinzu
+  (höchstens drei pro Aufruf). Dazu ein Such-Cache von 10 Minuten und ein
+  User-Agent mit Repo-URL.
