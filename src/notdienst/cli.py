@@ -272,29 +272,25 @@ def _suche(
     strasse: str | None,
     radius: int,
     erster: bool,
-) -> Suchergebnis:
+) -> tuple[str, Suchergebnis]:
     ergebnis = client.suche(
         ort, datum=datum, strasse=strasse, radius=radius
     )
     if ergebnis.treffer or not ergebnis.vorschlaege:
-        return ergebnis
+        return ort, ergebnis
 
     if erster:
-        return client.suche(
-            ergebnis.vorschlaege[0],
-            datum=datum,
-            strasse=strasse,
-            radius=radius,
-        )
-    if _interaktiv():
+        gewaehlt = ergebnis.vorschlaege[0].strip()
+    elif _interaktiv():
         gewaehlt = _ort_auswaehlen(ergebnis.vorschlaege)
-        return client.suche(
-            gewaehlt, datum=datum, strasse=strasse, radius=radius
+    else:
+        liste = "; ".join(ergebnis.vorschlaege)
+        raise AmbiguousError(
+            f"Ort ist mehrdeutig: {liste}.",
+            "Ort präzisieren (z. B. \"PLZ Ort\") oder --erster verwenden.",
         )
-    liste = "; ".join(ergebnis.vorschlaege)
-    raise AmbiguousError(
-        f"Ort ist mehrdeutig: {liste}.",
-        "Ort präzisieren (z. B. \"PLZ Ort\") oder --erster verwenden.",
+    return gewaehlt, client.suche(
+        gewaehlt, datum=datum, strasse=strasse, radius=radius
     )
 
 
@@ -371,7 +367,7 @@ def _suche_ausfuehren(args: argparse.Namespace, json_modus: bool) -> int:
     radius = getattr(args, "radius", 5)
 
     with Client() as client:
-        ergebnis = _suche(
+        ort, ergebnis = _suche(
             client,
             ort,
             datum=server_datum,

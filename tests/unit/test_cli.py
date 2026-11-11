@@ -84,6 +84,65 @@ def test_standard_speichert_config_mit_0600(tmp_path):
     assert json.loads(ergebnis.stdout)["standard_ort"] == "Heilbronn"
 
 
+class _FakeClient:
+    def __init__(self):
+        self.aufrufe: list[str] = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return None
+
+    def suche(self, ort, *, datum=None, strasse=None, radius=5):
+        from notdienst.models import Suchergebnis, Treffer
+
+        self.aufrufe.append(ort)
+        if ort.lower() == "vorschlag":
+            return Suchergebnis(
+                vorschlaege=[
+                    "74388 Talheim Rauher Stich",
+                    "91555 Feuchtwangen Heilbronn",
+                ]
+            )
+        return Suchergebnis(
+            treffer=[Treffer(name="Gewaehlte-Apotheke", entfernung_km=1.0)],
+            radius_km=25,
+            trefferblock=True,
+        )
+
+
+def test_erster_nutzt_aufgeloesten_ort_im_json(monkeypatch, capsys):
+    fake = _FakeClient()
+    monkeypatch.setattr("notdienst.cli.Client", lambda: fake)
+
+    code = cli_main(monkeypatch, ["jetzt", "vorschlag", "--erster", "--json"])
+
+    assert code == 0
+    daten = json.loads(capsys.readouterr().out)
+    assert daten["abfrage"]["ort"] == "74388 Talheim Rauher Stich"
+    assert fake.aufrufe == ["Vorschlag", "74388 Talheim Rauher Stich"]
+
+
+def test_erster_nutzt_aufgeloesten_ort_in_kopfzeile(monkeypatch, capsys):
+    fake = _FakeClient()
+    monkeypatch.setattr("notdienst.cli.Client", lambda: fake)
+    monkeypatch.setattr("notdienst.cli._will_json", lambda argv: False)
+
+    code = cli_main(monkeypatch, ["jetzt", "vorschlag", "--erster"])
+
+    assert code == 0
+    ausgabe = capsys.readouterr().out
+    assert "in 74388 Talheim Rauher Stich" in ausgabe
+
+
+def cli_main(monkeypatch, argv):
+    from notdienst import cli
+
+    monkeypatch.setenv("NOTDIENST_HEUTE", "2026-11-11")
+    return cli.main(argv)
+
+
 def test_strg_c_und_eof_ohne_traceback(monkeypatch, capsys):
     from notdienst import cli
 

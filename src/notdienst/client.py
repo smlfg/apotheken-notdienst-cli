@@ -10,7 +10,7 @@ import httpx
 from . import cache
 from .errors import InputError, SourceError
 from .models import Suchergebnis
-from .parser import parse_ergebnis, parse_formular
+from .parser import Suchformular, parse_ergebnis, parse_formular
 
 STANDARD_BASE_URL = "https://www.aponet.de"
 USER_AGENT = (
@@ -53,6 +53,7 @@ class Client:
     ) -> None:
         self.base_url = _base_url(base_url)
         self.use_cache = use_cache
+        self._formular: Suchformular | None = None
         self._client = httpx.Client(
             timeout=timeout,
             follow_redirects=True,
@@ -89,6 +90,13 @@ class Client:
             )
         return antwort.text
 
+    def _hole_formular(self) -> Suchformular:
+        if self._formular is None:
+            self._formular = parse_formular(
+                self._get(f"{self.base_url}/notdienstsuche")
+            )
+        return self._formular
+
     def suche(
         self,
         ort: str,
@@ -104,9 +112,7 @@ class Client:
             if zwischengespeichert is not None:
                 return zwischengespeichert
 
-        formular = parse_formular(
-            self._get(f"{self.base_url}/notdienstsuche")
-        )
+        formular = self._hole_formular()
         params = list(formular.params)
         params.extend(
             [
