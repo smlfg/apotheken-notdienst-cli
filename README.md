@@ -1,34 +1,61 @@
-# cli-mcp-template
-Project template for CLIs and MCP servers with the shared test suite
+# apotheken-notdienst-cli
 
-> **Hinweis:** Die Fabrik, die aus dieser Vorlage Werkzeuge baut (Workflow, UX-Gate, Pipeline), liegt jetzt in [smlfg/software-factory](https://github.com/smlfg/software-factory). Die Vorlage selbst bleibt vorerst hier.
+Notdienst-Apotheken in Deutschland live über die
+[aponet.de-Notdienstsuche](https://www.aponet.de/notdienstsuche) der
+ABDA/Landesapothekerkammern finden: Welche Apotheke hat jetzt oder an einem
+Datum Notdienst in meiner Nähe, mit Entfernung, Dienstzeit, Adresse und
+Telefon.
 
-## Schritt 0: UX-Spec zuerst
+## Schnellstart
 
-Der komplette Ablauf steht in [agent-learnings/WORKFLOW.md](https://github.com/smlfg/agent-learnings/blob/main/WORKFLOW.md).
+```bash
+pipx install git+https://github.com/smlfg/apotheken-notdienst-cli
+notdienst jetzt heilbronn
+notdienst datum samstag 74072
+notdienst standard heilbronn
+notdienst details Greif
+```
 
-1. Vor jeder Codezeile `docs/UX.md` ausfüllen (Vorlage liegt hier): die 3 wichtigsten Nutzer-Aufgaben als abtippbare Terminal-Sitzungen (pipx-Installation, `<tool> login`, Suche per Name, schreibende Aktion bis zur letzten Seite mit `[j/N]`), dazu alle live erkundeten Formularschritte und Fixtures unter `tests/fixtures/ux/`.
-2. Spec prüfen: `python3 tests/harness/ux_spec.py docs/UX.md`
-3. Gate nach dem Bau (beide müssen grün sein, sonst ist der Build nicht fertig):
-   - `python3 tests/harness/ux_check.py .` (UX-Lint UX01–UX08)
-   - `python3 tests/harness/ux_session.py .` (spielt die Sitzungen im Pseudo-Terminal gegen einen Fake-Server durch und prüft, dass ALLE Formularschritte gesendet werden)
+`notdienst` landet durch `pipx` im PATH. Ohne Argument nutzt `jetzt` und
+`datum` den gespeicherten Standard-Ort; `notdienst standard ORT` merkt ihn sich
+in `~/.config/apotheken-notdienst-cli/config.json` mit Rechten 0600.
 
-`tests/harness/` wird unverändert aus agent-learnings übernommen.
+## Befehle
 
-## Pflichtregel: Bedienbarkeit für Menschen
+| Befehl | Zweck |
+|---|---|
+| `notdienst jetzt [ORT\|PLZ]` | Notdienst heute; ohne Ort gilt der Standard-Ort |
+| `notdienst datum DATUM [ORT]` | Notdienst an einem Tag (`heute`, `morgen`, `samstag`, `sonntag`, `JJJJ-MM-TT`) |
+| `notdienst suche ORT [--radius KM] [--strasse STR]` | Suche mit Umkreis und optionaler Straße |
+| `notdienst details NAME` | Treffer per Namens-Teilstring im Standard-Ort |
+| `notdienst standard ORT` | Standard-Ort speichern |
+| `notdienst standard` | Gespeicherten Standard-Ort anzeigen |
 
-Jede CLI muss für Menschen bedienbar sein: `login`-Kommando statt nur Env, Namen statt IDs, interaktive Bestätigung im TTY, `--confirm` nur für Agenten, README-Schnellstart.
+Gemeinsame Filter: `--max-km KM`, `--offen-um HH:MM`, `--limit N`.
+`--json` liefert maschinenlesbares JSON; ohne TTY ist JSON der Standard.
+Mehrdeutige Orte werden im Terminal nummeriert zur Auswahl gestellt; ohne TTY
+nennt das Werkzeug die Vorschläge und endet mit Exit 2. `--erster` nimmt den
+ersten Vorschlag.
 
-- `login` fragt im Terminal interaktiv (Passwort per getpass) und speichert im Schlüsselbund oder in einer Config-Datei mit 0600; dazu `logout` und `whoami`/`status` ohne Passwort-Ausgabe. Env-Variablen überschreiben die Config (für Agenten).
-- Namen/Freitext positional (`tool book volleyball`, `tool search fahrrad`); mehrere Treffer → nummerierte Auswahl im TTY, ohne TTY Liste + Exit Usage.
-- Schreibende Aktionen: im TTY „… verbindlich? [j/N]“; `--confirm`/`--yes` nur für Agenten; ohne TTY und ohne Flag kein Request.
-- Terminal-Ausgabe lesbar; JSON mit `--json` oder wenn stdout kein Terminal ist.
-- Fehler nennen den nächsten Schritt, keine Tracebacks bei EOF/Strg+C/fehlender optionaler Abhängigkeit.
-- README beginnt mit „Schnellstart“: `pipx install git+https://github.com/smlfg/<repo>`, Login, ein typischer Befehl.
+## Umgebung
 
-### Pflicht-QA-Prüfpunkt „Bedienbarkeit für Menschen“
+| Variable | Wirkung |
+|---|---|
+| `NOTDIENST_BASE_URL` | Basis-URL überschreiben (z. B. für einen Fake-Server) |
+| `NOTDIENST_HEUTE` | Testdatum `JJJJ-MM-TT` für `heute`/`morgen`/Wochentage |
 
-1. Frisch per `pipx install git+…` installieren, Befehl direkt im PATH aufrufen.
-2. Haupt-Use-Case nur mit `--help` im Pseudo-Terminal (`script -qc "…" /dev/null`) durchspielen: `login` interaktiv, Suche per Name, Bestätigungsfrage mit „N“ → nichts gesendet.
-3. Ohne Login: Fehlermeldung nennt `tool login`.
-4. FAIL, wenn eine Kernaktion nur über Env-Variablen, interne IDs oder `--confirm` erreichbar ist.
+## Exit-Codes
+
+| Code | Bedeutung |
+|---|---|
+| 0 | Treffer gefunden bzw. Befehl erfolgreich |
+| 1 | Keine Treffer oder Netz-/Serverfehler (Meldung nennt den nächsten Schritt) |
+| 2 | Aufruf- oder Eingabefehler, z. B. mehrdeutiger oder unbekannter Ort |
+
+Höflich gegenüber dem Dienst: ein Suchlauf mit kurzem Cache (10 Minuten) unter
+`~/.cache/apotheken-notdienst-cli`, ein User-Agent mit Repo-URL. Es gibt keine
+schreibenden Web-Aktionen und keinen Login.
+
+## Lizenz
+
+MIT, Copyright smlfg.
