@@ -104,15 +104,28 @@ def test_fehlende_chash_ist_quellfehler():
     assert fehler.value.exit_code == 3
 
 
-@pytest.mark.parametrize("wert", ["keine-url", "ftp://example.invalid", ""])
+@pytest.mark.parametrize(
+    "wert",
+    [
+        "keine-url",
+        "ftp://example.invalid",
+        "http://",
+        "http://host:abc",
+        "http://host:70000",
+        "http://[::1",
+    ],
+)
 def test_ungueltige_basis_url_ist_eingabefehler(monkeypatch, wert):
     monkeypatch.setenv("NOTDIENST_BASE_URL", wert)
-    if wert == "":
-        assert Client().base_url == "https://www.aponet.de"
-        return
     with pytest.raises(InputError) as fehler:
         Client()
     assert fehler.value.exit_code == 2
+    assert fehler.value.naechster_schritt
+
+
+def test_leere_basis_url_nutzt_standard(monkeypatch):
+    monkeypatch.setenv("NOTDIENST_BASE_URL", "")
+    assert Client().base_url == "https://www.aponet.de"
 
 
 def test_nicht_erreichbar_ist_quellfehler_mit_naechstem_schritt():

@@ -24,12 +24,21 @@ _FELD = "tx_aponetpharmacy_search[search]"
 def _base_url(wert: str | None) -> str:
     roh = (wert if wert is not None else os.environ.get("NOTDIENST_BASE_URL", ""))
     roh = roh.strip() or STANDARD_BASE_URL
-    teile = urlsplit(roh)
-    if teile.scheme not in {"http", "https"} or not teile.netloc:
-        raise InputError(
-            f"Ungültige Basis-URL: {roh!r}.",
-            "NOTDIENST_BASE_URL als http(s)://host[:port] setzen oder entfernen.",
-        )
+    fehler = InputError(
+        f"Ungültige Basis-URL: {roh!r}.",
+        "NOTDIENST_BASE_URL als http(s)://host[:port] setzen oder entfernen.",
+    )
+    try:
+        teile = urlsplit(roh)
+        _ = teile.port
+    except ValueError:
+        raise fehler from None
+    if (
+        teile.scheme not in {"http", "https"}
+        or not teile.netloc
+        or teile.hostname is None
+    ):
+        raise fehler
     return roh.rstrip("/")
 
 
