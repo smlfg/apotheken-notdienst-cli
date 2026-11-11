@@ -12,6 +12,31 @@ from .models import Suchergebnis, Treffer
 
 _NAME = "apotheken-notdienst-cli"
 _TTL = 600
+_FELDER = set(Treffer.__dataclass_fields__)
+_FLOAT_FELDER = {"entfernung_km", "breite", "laenge"}
+
+
+def _treffer_aus_daten(eintrag: object) -> Treffer | None:
+    """Baut einen Treffer nur aus Feldern mit passenden Typen."""
+    if not isinstance(eintrag, dict):
+        return None
+    werte = {key: wert for key, wert in eintrag.items() if key in _FELDER}
+    for feld, wert in werte.items():
+        if wert is None:
+            continue
+        if feld in _FLOAT_FELDER:
+            if isinstance(wert, bool) or not isinstance(wert, (int, float)):
+                return None
+        elif not isinstance(wert, str):
+            return None
+    return Treffer(**werte)
+
+
+def _verwerfe(pfad: Path) -> None:
+    try:
+        pfad.unlink()
+    except OSError:
+        pass
 
 
 def cache_dir() -> Path:
@@ -69,25 +94,26 @@ def lade(
     except (TypeError, ValueError):
         return None
     if alter < 0 or alter > _TTL:
-        try:
-            pfad.unlink()
-        except OSError:
-            pass
+        _verwerfe(pfad)
         return None
 
     roh_treffer = daten.get("treffer")
     if not isinstance(roh_treffer, list):
+        _verwerfe(pfad)
         return None
-    erlaubt = set(Treffer.__dataclass_fields__)
     treffer: list[Treffer] = []
-    try:
-        for eintrag in roh_treffer:
-            if not isinstance(eintrag, dict):
-                return None
-            treffer.append(Treffer(**{k: v for k, v in eintrag.items() if k in erlaubt}))
-        radius_km = daten.get("radius_km")
-        radius_km = int(radius_km) if radius_km is not None else None
-    except (TypeError, ValueError):
+    for eintrag in roh_treffer:
+        gelesen = _treffer_aus_daten(eintrag)
+        if gelesen is None:
+            _verwerfe(pfad)
+            return None
+        treffer.append(gelesen)
+
+    radius_km = daten.get("radius_km")
+    if radius_km is not None and (
+        isinstance(radius_km, bool) or not isinstance(radius_km, int)
+    ):
+        _verwerfe(pfad)
         return None
     return Suchergebnis(
         treffer=treffer, radius_km=radius_km, trefferblock=True
