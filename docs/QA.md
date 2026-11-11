@@ -14,6 +14,9 @@
   schreibenden Web-Aktionen. Fake-Läufe nutzen `tests/harness/fake_server.py`
   unverändert.
 - **Auftrag:** reine Prüfung (find → file), keine Codeänderungen.
+- **Nachprüfung S6:** Fixes `3b5301a`, `49e4a8b`, `fda0250`, `ca0f32d`;
+  betroffene Zeilen erneut ausgeführt, pytest 73 passed, UX-Gate und
+  UX-Session je Exit 0.
 
 Hinweis: Die Live-Quelle lieferte am Prüftag 7 Treffer für `jetzt heilbronn`
 und 5 für `datum samstag 74072`; die UX-Fixtures kürzen bewusst auf 3. Das ist
@@ -47,7 +50,7 @@ kein Fehler. Der Server meldet im Kopf „25 km“ und liefert teils Treffer üb
 | 21 | Datum + `--limit` | `notdienst datum samstag 74072 --limit 2 --json` | genau 2 Treffer | OK | `anzahl: 2`, 2 Einträge |
 | 22 | Datum + `--offen-um` leer | `notdienst datum samstag 74072 --offen-um 07:00 --json` | Exit 1 | OK | Fehlerobjekt mit `exit_code: 1` |
 | 23 | Mehrdeutiger Ort ohne TTY | Fake: `notdienst jetzt vorschlag --json` | Exit 2 mit Vorschlagsliste | OK | `Ort ist mehrdeutig: 74388 Talheim Rauher Stich; 91555 Feuchtwangen Heilbronn.` |
-| 24 | Mehrdeutiger Ort mit `--erster` | Fake: `notdienst jetzt vorschlag --erster --json` | Treffer des gewählten Orts, Ausgabe nennt gewählten Ort | **FAIL** | Treffer kommen, aber `abfrage.ort`/Kopfzeile bleiben `Vorschlag` statt `74388 Talheim Rauher Stich` |
+| 24 | Mehrdeutiger Ort mit `--erster` | Fake: `notdienst jetzt vorschlag --erster --json` | Treffer des gewählten Orts, Ausgabe nennt gewählten Ort | OK (nach Fix fda0250) | `abfrage.ort=74388 Talheim Rauher Stich`, 3 Treffer, Exit 0 (`scratch/qa/s6_ambig.txt`) |
 | 25 | TTY-Auswahl / Fehleingabe / EOF | Fake: Auswahl `2`, `99`, Strg+D | 2 → Treffer; 99 → Exit 2; EOF → Exit 130 | OK | `Auswahl [1-2]:`; `Ungültige Auswahl: 99.`; `Eingabe abgebrochen.`, keine Tracebacks |
 | 26 | Details-Mehrfachauswahl TTY | Fake: `details Apotheke --ort umlaut`, Auswahl `2` | genau der gewählte Eintrag | OK | `Schloß-Apotheke (2.00 km)`, kein Kopf/keine Nummer |
 | 27 | Leere Trefferliste | Fake: `notdienst jetzt ohnetreffer --json` | Exit 1, nächster Schritt | OK | `Keine Notdienst-Apotheke gefunden` |
@@ -57,49 +60,43 @@ kein Fehler. Der Server meldet im Kopf „25 km“ und liefert teils Treffer üb
 | 31 | JSON-Fehlerobjekt | `--json` bei Netz-, Datums-, Basis-URL-Fehler | genau ein valides JSON-Objekt | OK | `{"fehler": {"exit_code": …, "meldung": …, "naechster_schritt": …}}` |
 | 32 | Nur GETs, User-Agent | lokaler Mitschnitt eines normalen Laufs | 2× GET, UA mit Repo-URL | OK | 2 Requests; `apotheken-notdienst-cli (+https://github.com/smlfg/apotheken-notdienst-cli)` |
 | 33 | Cache (10 min) | zweimal `notdienst jetzt heilbronn --json` | 2. Lauf ohne neuen Request | OK | Requests nach Lauf 1: 2, nach Lauf 2: 2; stdout identisch |
-| 34 | Unlesbarer Cache-Eintrag | Fake-Cache mit `entfernung_km: "x"`, TTY | Eintrag verwerfen/neu holen, kein Traceback | **FAIL** | `ValueError: Unknown format code 'f' for object of type 'str'`, Exit 1 |
+| 34 | Unlesbarer Cache-Eintrag | Fake-Cache mit `entfernung_km: "x"`, TTY | Eintrag verwerfen/neu holen, kein Traceback | OK (nach Fix 49e4a8b) | Eintrag verworfen, live 7 Treffer, Exit 0, kein Traceback (`scratch/qa/s6_badcache-tty.log`) |
 | 35 | Ungültige Basis-URL (Form) | `NOTDIENST_BASE_URL=notaurl`, `=http://` | Exit 2, klare Meldung | OK | `Ungültige Basis-URL: 'notaurl'. – NOTDIENST_BASE_URL als http(s)://…` |
-| 36 | Ungültige Basis-URL (Port/IPv6) | `NOTDIENST_BASE_URL='http://host:abc'`, `='http://[::1'` | Exit 2, klare Meldung, kein Traceback | **FAIL** | `httpx.InvalidURL: Invalid port: 'abc'` bzw. `ValueError: Invalid IPv6 URL`, Exit 1, Traceback |
+| 36 | Ungültige Basis-URL (Port/IPv6) | `NOTDIENST_BASE_URL='http://host:abc'`, `='http://[::1'` | Exit 2, klare Meldung, kein Traceback | OK (nach Fix 3b5301a) | je Exit 2, JSON-Fehlerobjekt, kein Traceback (`scratch/qa/json/s6_url_*.out`) |
 | 37 | Datum ungültig/außerhalb | `datum quatsch`, `datum 2026-12-01` | Exit 2 mit gültigem Bereich | OK | `Datum zwischen 11.11.2026 und 25.11.2026 wählen` |
 | 38 | Radius/Limit/Uhrzeit ungültig | `--radius 0`, `--limit 0`, `--offen-um 25:99` | Exit 2, klare Meldung | OK | `--radius muss zwischen 1 und 50 liegen`, `--limit muss mindestens 1 sein`, `--offen-um erwartet HH:MM` |
 | 39 | Kein Standard-Ort | `details Greif` / `jetzt` mit leerem HOME | Exit 1, Verweis auf `standard` | OK | `Kein Standard-Ort gespeichert – mit notdienst standard ORT …` |
 | 40 | Standard anzeigen | `notdienst standard --json` | gespeicherter Ort + Pfad | OK | `{"standard_ort": "Heilbronn", "config": "…/config.json"}` |
 | 41 | Globale Flags nach Unterkommando | `notdienst jetzt heilbronn --version` | Exit 0 | OK | `notdienst 0.1.0` |
 | 42 | Strg+C | Request gegen nicht antwortende Adresse, `SIGINT` | Exit 130, kein Traceback | OK | `Abgebrochen.`, Exit 130 |
-| 43 | Unbekannter Ort | `notdienst jetzt Xyzzyquatsch --json` | laut `INTERFACE.md`: Exit 2 | **FAIL** | tatsächlich Exit 1 `Keine Notdienst-Apotheke gefunden`; `INTERFACE.md` nennt „unbekannter Ort“ als Exit 2, der Akzeptanztest erwartet Exit 1 |
-| 44 | Request-Anzahl bei Mehrdeutigkeit | Fake: `--erster` vs. ohne | laut README „höchstens zwei GETs pro Aufruf“ | **FAIL (Doku)** | ohne `--erster`: 2 Requests; mit `--erster`: 4 Requests (Formular + Suche je einmal pro Vorschlag) |
+| 43 | Unbekannter Ort | `notdienst jetzt Xyzzyquatsch --json` | laut `INTERFACE.md`: Exit 1 wie „keine Treffer“ | OK (nach Fix ca0f32d) | Exit 1, `Keine Notdienst-Apotheke gefunden`; `INTERFACE.md`/README an UX und Akzeptanztest angeglichen (`scratch/qa/json/s6_unbekannter_ort.out`) |
+| 44 | Request-Anzahl bei Mehrdeutigkeit | Fake: `--erster` vs. ohne | Doku nennt höchstens drei GETs pro Aufruf | OK (nach Fix fda0250, ca0f32d) | ohne `--erster`: 2 Requests, Exit 2; mit `--erster`: 3 Requests (Formular einmal, zwei Suchen) (`scratch/qa/s6_ambig.txt`) |
 
 ## Zählung
 
-- **OK:** 39
-- **FAIL:** 5
+- **OK:** 44 (davon 5 nach Fix nachgeprüft)
+- **FAIL:** 0
 - **Gesamt:** 44
 
-## Offene FAILs
+## Behobene FAILs (Nachprüfung)
 
-1. **Basis-URL-Validierung (Port/IPv6):** `NOTDIENST_BASE_URL` mit ungültigem
-   Port (`http://host:abc`) oder kaputtem IPv6 (`http://[::1`) erzeugt einen
-   Traceback und Exit 1 statt Exit 2 mit nächstem Schritt. Verstößt gegen
-   `INTERFACE.md` („Ungültige Werte … nie ein Traceback“) und die AGENTS-Regel
-   zur robusten Env-Validierung. Belege: `scratch/qa/json/url_port.err`,
-   `scratch/qa/json/url_ipv6.err`.
-2. **Cache-Schema nicht validiert:** Ein JSON-valider, aber falsch typisierter
-   Cache-Eintrag (`entfernung_km` als String) wird geladen und führt im
-   Textmodus zu `ValueError` mit Traceback. `INTERFACE.md` verlangt, unlesbare
-   Einträge zu verwerfen und neu zu holen. Beleg: `scratch/qa/badcache-tty.log`.
-3. **Falscher Ortsname nach Vorschlagsauswahl:** Bei mehrdeutigem Ort nennen
-   `--erster` und die interaktive Auswahl in Kopfzeile und JSON weiter den
-   ursprünglichen Suchbegriff („Vorschlag“) statt des tatsächlich abgefragten
-   Vorschlags. Belege: `scratch/qa/extra-tty-2.log`,
-   `scratch/qa/json/extra_vorschlag_erster.out`.
-4. **Widerspruch bei unbekanntem Ort:** `INTERFACE.md` fordert Exit 2 für einen
-   unbekannten Ort; die Umsetzung und `tests/acceptance/test_ux_sessions.py`
-   liefern Exit 1. Entweder Doku oder Test muss angepasst werden. Beleg:
-   `scratch/qa/json/unbekannter_ort.out`.
-5. **Doku vs. Request-Anzahl:** README/Interface sprechen von höchstens zwei
-   GETs pro Aufruf; bei mehrdeutigem Ort mit `--erster` oder TTY-Auswahl sind
-   es vier (je Formular + Suche pro Versuch). Verhalten ist funktional sinnvoll,
-   die Doku ist aber ungenau. Beleg: `scratch/qa/ambig_requests.py`.
+1. **Basis-URL-Validierung (Port/IPv6):** `http://host:abc` und `http://[::1`
+   liefern jetzt Exit 2 mit JSON-Fehlerobjekt und nächstem Schritt, ohne
+   Traceback. Fix `3b5301a`; Belege `scratch/qa/json/s6_url_*.out`.
+2. **Cache-Schema:** Falsch typisierte Einträge (`entfernung_km` als String)
+   werden verworfen und neu geholt. Fix `49e4a8b`; Beleg
+   `scratch/qa/s6_badcache-tty.log`.
+3. **Ortsname nach Vorschlagsauswahl:** `--erster` und die TTY-Auswahl nennen
+   in Kopfzeile und JSON den tatsächlich gewählten Vorschlag. Fix `fda0250`;
+   Beleg `scratch/qa/s6_ambig.txt`.
+4. **Unbekannter Ort:** Umsetzung bleibt Exit 1 wie „keine Treffer“ (UX-Spec
+   und Akzeptanztest); `INTERFACE.md` und README wurden entsprechend
+   präzisiert. Fix `ca0f32d`; Beleg
+   `scratch/qa/json/s6_unbekannter_ort.out`.
+5. **Request-Anzahl:** Ein normaler Lauf bleibt bei zwei GETs; bei
+   Mehrdeutigkeit kommt ein dritter Such-GET hinzu, weil die Formularseite
+   wiederverwendet wird. README/Interface/Anforderungen nennen jetzt höchstens
+   drei GETs. Fix `fda0250`, `ca0f32d`; Beleg `scratch/qa/s6_ambig.txt`.
 
 ## Reproduzierbarkeit
 
