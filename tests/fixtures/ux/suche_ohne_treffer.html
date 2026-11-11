@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="utf-8"><title>Notdienstsuche</title></head>
+<body>
+<main>
+<form role="search" novalidate="novalidate" method="post" name="search" id="pharmacy-searchform" action="/notdienstsuche?tx_aponetpharmacy_search%5Baction%5D=search&amp;tx_aponetpharmacy_search%5Bcontroller%5D=Search&amp;cHash=d60644fbe4920abed16b25ce29f3b7c8">
+<div>
+<input type="hidden" name="tx_aponetpharmacy_search[__referrer][@extension]" value="AponetPharmacy" />
+<input type="hidden" name="tx_aponetpharmacy_search[__referrer][@controller]" value="Search" />
+<input type="hidden" name="tx_aponetpharmacy_search[__referrer][@action]" value="search" />
+<input type="hidden" name="tx_aponetpharmacy_search[__referrer][arguments]" value="YTowOnt97c054add4f9ce143ac91353826af0fc124a20a14" />
+<input type="hidden" name="tx_aponetpharmacy_search[__referrer][@request]" value="{&quot;@extension&quot;:&quot;AponetPharmacy&quot;,&quot;@controller&quot;:&quot;Search&quot;,&quot;@action&quot;:&quot;search&quot;}a1b1054f18eb2249fa8766750e421766ae68f8dd" />
+<input type="hidden" name="tx_aponetpharmacy_search[__trustedProperties]" value="{&quot;search&quot;:{&quot;plzort&quot;:1,&quot;date&quot;:1,&quot;street&quot;:1,&quot;radius&quot;:1}}5e869cf2e190b391161359fdc8e3b39698b0911c" />
+</div>
+
+        <div class="row mb-3 g-0">
+            <div class="input-group col">
+                <input placeholder="PLZ oder Ort eingeben ..." class="form-control" type="text" name="tx_aponetpharmacy_search[search][plzort]" value="" />
+                <button class="btn btn-primary" type="submit" name="" value="">Suchen</button>
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-link" data-bs-toggle="collapse" data-bs-target="#search-filters">
+                    Erweiterte Suche
+                </button>
+            </div>
+        </div>
+        <div class="collapse" id="search-filters">
+            <div class="p-3 mb-3 bg-light rounded">
+                
+                    <div class="mb-3">
+                        <label for="filter-date" class="form-label">Datum</label>
+                        <input min="2026-11-11" max="2026-11-25" class="form-control" id="filter-date" type="date" name="tx_aponetpharmacy_search[search][date]" value="" />
+                    </div>
+                
+                <div class="mb-3">
+                    <label for="filter-address" class="form-label">Straße und Hausnummer</label>
+                    <input class="form-control" id="filter-address" type="text" name="tx_aponetpharmacy_search[search][street]" value="" />
+                </div>
+                <div>
+                    <label for="filter-radius" class="form-label">Im Umkreis von <span class="radius-val">5</span>
+                        Kilometern</label>
+                    <div class="input-group">
+                        <span class="me-3">1&nbsp;km</span>
+                        
+                                <input min="1" max="50" step="1" class="radius form-range flex-grow-1 w-auto" id="filter-radius" type="range" name="tx_aponetpharmacy_search[search][radius]" value="5" />
+                            
+                        <span class="ms-3">50&nbsp;km</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</main>
+</body>
+</html>
