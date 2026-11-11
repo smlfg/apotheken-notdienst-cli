@@ -100,7 +100,7 @@ $ notdienst details Greif
 ! exit 0
 ```
 
-Gibt es keinen Treffer, endet der Befehl mit Exit 2 und nennt den nächsten
+Gibt es keinen Treffer, endet der Befehl mit Exit 1 und nennt den nächsten
 Schritt, zum Beispiel
 `Keine Notdienst-Apotheke gefunden – anderen Ort mit notdienst jetzt ORT versuchen.`
 Mehrdeutige Orte zeigt das Werkzeug im Terminal als nummerierte Auswahl; ohne
