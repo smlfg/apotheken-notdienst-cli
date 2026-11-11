@@ -1,92 +1,135 @@
-# UX-Spec: kurstool
+# UX-Spec: notdienst
 
-Diese Datei ist die Vorlage für `docs/UX.md` in jedem neuen Repo. Sie wird vor der ersten Codezeile ausgefüllt. Alle Befehle sind so abtippbar, wie ein Mensch sie im Terminal eingibt. Beispielwerte (Tool `kurstool`, Kursnummern, Mails auf `.invalid`) werden durch die echten Werte des Projekts ersetzt.
+Diese Datei beschreibt die drei wichtigsten Aufgaben für Menschen, die den
+Notdienst in ihrer Nähe suchen. Alle Befehle sind so abtippbar, wie sie im
+Terminal eingegeben werden. Die Beispieldaten stammen aus echten, gekürzten
+Antworten der aponet.de-Notdienstsuche vom 11.11.2026.
 
-Ablauf beim Ausfüllen:
-
-1. Website live öffnen und die drei wichtigsten Aufgaben eines Menschen heraussuchen.
-2. Jede Aufgabe als Sitzung mitschreiben: Befehl, Eingabe, erwartete Ausgabe.
-3. Lesende Routen und alle Formularschritte der schreibenden Aktion ergänzen.
-4. Fixtures unter `tests/fixtures/ux/` ablegen.
-5. `python tests/harness/ux_check.py --spec-only` laufen lassen; erst bei grünem UX01 weiterbauen.
+Das Werkzeug ist rein lesend: Es sucht Notdienst-Apotheken und zeigt Name,
+Entfernung, Dienstzeit, Adresse und Telefon. Es gibt keine Buchung, keinen
+Login und damit keine schreibende Web-Aktion.
 
 ## Meta
 
-Das Meta-Objekt benennt den Befehlsnamen im PATH, den Installationsbefehl und alle Umgebungsvariablen. `base_url_env` ist Pflicht, sobald es Routen oder Formsteps gibt. `credential_env` führt dazu, dass das Tool einen `login`-Befehl haben muss.
+Der Befehl heißt `notdienst`. Die Basis-URL lässt sich für den Fake-Server über
+`NOTDIENST_BASE_URL` überschreiben. `NOTDIENST_HEUTE` setzt in Tests das
+heutige Datum (JJJJ-MM-TT), damit „heute“, „morgen“ und Wochentage
+reproduzierbar sind. Im Alltag wird die Variable nicht gesetzt.
 
 ```ux-meta
-{"tool": "kurstool",
- "install": "pipx install git+https://github.com/smlfg/kurstool-cli",
- "base_url_env": "KURSTOOL_BASE_URL",
- "env": {"KURSTOOL_STATUSGRUPPE": "studierende"},
- "credential_env": ["KURSTOOL_LOGIN_USER", "KURSTOOL_LOGIN_PASSWORD"]}
+{"tool": "notdienst",
+ "install": "pipx install git+https://github.com/smlfg/apotheken-notdienst-cli",
+ "base_url_env": "NOTDIENST_BASE_URL",
+ "env": {"NOTDIENST_HEUTE": "2026-11-11"}}
 ```
 
 ## Sitzungen
 
-Jede Sitzung ist eine Nutzer-Aufgabe. Es müssen mindestens drei sein, darunter Login, Suche per Name und eine schreibende Aktion. `$` ist ein Befehl, `>` eine Eingabe, `<` eine erwartete Ausgabe und `!` der erwartete Exit-Code. Der Installationsbefehl wird von der Harness durch eine lokale Installation in ein frisches venv ersetzt.
+`$` ist ein Befehl, `>` eine Eingabe, `<` eine erwartete Ausgabe und `!` der
+erwartete Exit-Code. Die Installation wird von der Harness durch eine lokale
+Installation in ein frisches venv ersetzt.
 
-### Installation und Login
+### Installation und Notdienst jetzt
 
-Der Login fragt im Terminal interaktiv nach Benutzer und Passwort. Das Passwort wird nicht angezeigt und nicht gespeichert; die Sitzung landet im Schlüsselbund oder in einer Datei mit Rechten 0600. Die Zugangsdaten stammen aus einem Testkonto, nie aus echten Daten.
+Nach der Installation fragt der Mensch mit einem positional Ort oder einer
+Postleitzahl nach dem aktuellen Notdienst. Ohne Argument gilt der gespeicherte
+Standard-Ort. Die Ausgabe zeigt pro Treffer Name, Entfernung, Dienstzeit,
+Adresse und Telefon.
 
 ```ux-session
-$ pipx install git+https://github.com/smlfg/kurstool-cli
-< kurstool
-$ kurstool login
-< Benutzer:
-> max.mustermann@example.invalid
-< Passwort:
-> geheim
-< Login erfolgreich
+$ pipx install git+https://github.com/smlfg/apotheken-notdienst-cli
+< notdienst
+$ notdienst jetzt heilbronn
+< Notdienst-Apotheken für heute (11.11.2026) in Heilbronn
+< 3 Treffer
+< 1) Apotheke im Staufenberg-Zentrum (3.22 km)
+<    Notdienst 11.11.2026 08:30 bis 12.11.2026 08:30
+<    Staufenbergstr. 31, 74081 Heilbronn
+<    Tel: +49 7131 899055
+< 2) Heuchelberg-Apotheke (7.50 km)
+<    Notdienst 11.11.2026 08:30 bis 12.11.2026 08:30
+<    Hauptstr. 46, 74226 Nordheim
+<    Tel: +49 7133 17013
+< 3) Greif-Apotheke (8.01 km)
+<    Notdienst 11.11.2026 08:30 bis 12.11.2026 08:30
+<    Frankenweg 5, 74172 Neckarsulm
+<    Tel: +49 7132 83811
 ! exit 0
 ```
 
-### Kurse nach Namen suchen
+### Notdienst an einem Tag
 
-Der Suchbegriff ist positional. Die Ausgabe zeigt Namen und Kursnummer, damit ein Mensch ohne Nachschlagen weiterarbeiten kann.
+Für einen anderen Tag stehen `heute`, `morgen`, `samstag`, `sonntag` oder ein
+Datum als `JJJJ-MM-TT` bereit. Der Ort bleibt positional und kann auch eine
+Postleitzahl sein.
 
 ```ux-session
-$ kurstool search volleyball
-< 1) Volleyball Anfänger (Kurs 32304)
-< 2) Volleyball Fortgeschritten (Kurs 32305)
+$ notdienst datum samstag 74072
+< Notdienst-Apotheken für Samstag, 14.11.2026 in 74072
+< 3 Treffer
+< 1) Harfensteller Apotheke Wollhaus (0.28 km)
+<    Notdienst 14.11.2026 08:30 bis 15.11.2026 08:30
+<    Am Wollhaus 4, 74072 Heilbronn
+<    Tel: +49 7131 991990
+< 2) Engel Apotheke (5.97 km)
+<    Notdienst 14.11.2026 08:30 bis 15.11.2026 08:30
+<    Marktstr. 37, 74172 Neckarsulm
+<    Tel: +49 7132 6182
+< 3) apotheke actuell (9.01 km)
+<    Notdienst 14.11.2026 08:30 bis 15.11.2026 08:30
+<    Schillerstr. 18, 74348 Lauffen am Neckar
+<    Tel: +49 7133 17909
 ! exit 0
 ```
 
-### Kurs verbindlich buchen
+### Standard-Ort speichern und Details nachlesen
 
-Die schreibende Aktion zeigt zuerst Kurs, Ort und Preis. Danach fragt sie mit Default Nein. Erst nach `j` werden alle Formularschritte bis zur endgültigen Bestätigung gesendet. Bei `N` endet der Befehl ohne Request an einen Schritt ohne `before_confirm`.
+`notdienst standard ORT` merkt sich den Ort in
+`~/.config/apotheken-notdienst-cli/config.json` (Rechte 0600). Danach genügt
+`notdienst jetzt`. `notdienst details NAME` sucht den Namen als Teilstring im
+Notdienst des Standard-Orts und zeigt den vollständigen Eintrag.
 
 ```ux-session
-$ kurstool book "Volleyball Anfänger"
-< Kurs: Volleyball Anfänger (32304)
-< Ort: Sporthalle Nord
-< Preis: 25,00 EUR
-< Buchung verbindlich? [j/N]
-> j
-< Buchung bestätigt
-< Bestätigungsnummer: KB-2026-0042
+$ notdienst standard heilbronn
+< Standard-Ort gespeichert: Heilbronn
+$ notdienst details Greif
+< Greif-Apotheke (8.01 km)
+< Notdienst 11.11.2026 08:30 bis 12.11.2026 08:30
+< Frankenweg 5, 74172 Neckarsulm
+< Tel: +49 7132 83811
 ! exit 0
 ```
+
+Gibt es keinen Treffer, endet der Befehl mit Exit 2 und nennt den nächsten
+Schritt, zum Beispiel
+`Keine Notdienst-Apotheke gefunden – anderen Ort mit notdienst jetzt ORT versuchen.`
+Mehrdeutige Orte zeigt das Werkzeug im Terminal als nummerierte Auswahl; ohne
+TTY nennt es die Vorschläge und endet mit Exit 2. `--erster` wählt den ersten
+Vorschlag. Ein unbekannter Ort führt zu derselben klaren Meldung, nie zu einem
+Traceback.
 
 ## Lesende Routen
 
-Hier stehen alle Routen, die die Sitzungen gegen den Fake-Server brauchen. `path` wird ohne Querystring exakt verglichen; `query_contains` ist optional. Der Login ist ein POST, löst aber keine Buchung aus und gehört deshalb zu den lesenden Routen. Die Antwortdateien liegen relativ zum Repo.
+Alle Sitzungen fragen zuerst die Formularseite ab, um die aktuelle `cHash` und
+`__trustedProperties` zu bekommen, und rufen danach die Extbase-Suche per GET
+auf. Die Suchparameter stehen als Query-Parameter in der URL; es wird nichts
+geschrieben. Die konkreten Such-Routen stehen vor der allgemeinen
+Formular-Route, weil `path` allein sonst nicht unterscheidbar wäre.
 
 ```ux-routes
-[{"method":"POST","path":"/login","response":"tests/fixtures/ux/login_erfolg.html","status":200,"content_type":"text/html; charset=utf-8"},
- {"method":"GET","path":"/kurse","query_contains":"volleyball","response":"tests/fixtures/ux/kurse.html","status":200,"content_type":"text/html; charset=utf-8"},
- {"method":"GET","path":"/kurse/32304","response":"tests/fixtures/ux/kurs_32304.html","status":200,"content_type":"text/html; charset=utf-8"}]
+[{"method":"GET","path":"/notdienstsuche","query_contains":"2026-11-14","response":"tests/fixtures/ux/suche_heilbronn_samstag.html","status":200,"content_type":"text/html; charset=utf-8"},
+ {"method":"GET","path":"/notdienstsuche","query_contains":"heilbronn","response":"tests/fixtures/ux/suche_heilbronn_jetzt.html","status":200,"content_type":"text/html; charset=utf-8"},
+ {"method":"GET","path":"/notdienstsuche","response":"tests/fixtures/ux/notdienstsuche_form.html","status":200,"content_type":"text/html; charset=utf-8"}]
 ```
 
-## Formularschritte der schreibenden Aktion
+Die Antworten sind gekürzte echte Trefferlisten (drei statt sieben Treffer,
+Werbung und Skripte entfernt). Die Formularseite enthält das echte
+Formulargerüst mit `cHash` und versteckten Feldern, aber ohne Werbung.
 
-Die Liste enthält ALLE Requests in Reihenfolge, bis die Buchung endgültig bestätigt ist. `sends` nennt Feldnamen, die im Body vorkommen müssen; ein `*` am Ende erlaubt Präfix-Treffer. `before_confirm: true` ist nur für Schritte erlaubt, die vor der `[j/N]`-Frage laufen und nichts verbindlich auslösen, zum Beispiel das Öffnen des Formulars. `live: erkundet` heißt lesend auf der echten Seite gesehen, `live: synthetisch` heißt nachgebaut und als solches markiert.
+## Keine schreibenden Formularschritte
 
-```ux-formsteps
-[{"id":"formular_oeffnen","method":"POST","path":"/buchen/32304","sends":["kurs_id"],"response":"tests/fixtures/ux/buchen_formular.html","before_confirm":true,"live":"erkundet"},
- {"id":"teilnehmerdaten","method":"POST","path":"/buchen/32304","sends":["vorname","nachname","email","statusgruppe"],"response":"tests/fixtures/ux/buchen_uebersicht.html","live":"synthetisch"},
- {"id":"verbindlich","method":"POST","path":"/buchen/32304","sends":["bestaetigungstoken"],"response":"tests/fixtures/ux/buchen_bestaetigt.html","final":true,"live":"synthetisch"}]
-```
-
-Der letzte Schritt trägt `"final": true`. Fehlt ein Schritt oder endet die Aktion nach dem ersten Request, meldet `ux_check.py` UX08 und `ux_session.py` bricht den Lauf ab. Beide Gates müssen grün sein, bevor der Build als fertig gilt.
+Die Notdienstsuche ist rein lesend. Deshalb gibt es keinen `ux-formsteps`-Block,
+keine `credential_env` und keinen Bestätigungsschritt. UX07, UX08 und UX09
+entfallen beziehungsweise werden als SKIP beziehungsweise PASS ohne Aktion
+gemeldet. Spätere Befehle wie `notdienst standard` speichern nur lokal und
+senden keinen Request.
