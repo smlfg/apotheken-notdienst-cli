@@ -82,3 +82,23 @@ def test_standard_speichert_config_mit_0600(tmp_path):
     ergebnis = _run(tmp_path, "standard")
     assert ergebnis.returncode == 0
     assert json.loads(ergebnis.stdout)["standard_ort"] == "Heilbronn"
+
+
+def test_strg_c_und_eof_ohne_traceback(monkeypatch, capsys):
+    from notdienst import cli
+
+    def _abbruch(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli, "_suche_ausfuehren", _abbruch)
+    assert cli.main(["jetzt", "heilbronn"]) == 130
+    ausgabe = capsys.readouterr()
+    assert "Traceback" not in ausgabe.err
+
+    def _eof(*args, **kwargs):
+        raise EOFError
+
+    monkeypatch.setattr(cli, "_suche_ausfuehren", _eof)
+    assert cli.main(["jetzt", "heilbronn"]) == 130
+    ausgabe = capsys.readouterr()
+    assert "Traceback" not in ausgabe.err

@@ -113,3 +113,18 @@ def test_ungueltige_basis_url_ist_eingabefehler(monkeypatch, wert):
     with pytest.raises(InputError) as fehler:
         Client()
     assert fehler.value.exit_code == 2
+
+
+def test_nicht_erreichbar_ist_quellfehler_mit_naechstem_schritt():
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("kaputt", request=request)
+
+    with Client(
+        base_url="https://aponet.example.invalid",
+        transport=httpx.MockTransport(handler),
+        use_cache=False,
+    ) as client:
+        with pytest.raises(SourceError) as fehler:
+            client.suche("Heilbronn")
+    assert fehler.value.exit_code == 3
+    assert "Netzverbindung" in fehler.value.naechster_schritt
