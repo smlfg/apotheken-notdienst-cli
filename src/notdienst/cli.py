@@ -324,11 +324,12 @@ def _eintrag(treffer: Treffer, nummer: int | None = None) -> list[str]:
         else "-"
     )
     prefix = f"{nummer}) " if nummer is not None else ""
+    einzug = "   " if nummer is not None else ""
     return [
         f"{prefix}{treffer.name} ({entfernung} km)",
-        treffer.dienstzeit or "Notdienstzeit unbekannt",
-        _adresse(treffer),
-        f"Tel: {treffer.telefon}" if treffer.telefon else "Tel: -",
+        f"{einzug}{treffer.dienstzeit or 'Notdienstzeit unbekannt'}",
+        f"{einzug}{_adresse(treffer)}",
+        f"{einzug}Tel: {treffer.telefon}" if treffer.telefon else f"{einzug}Tel: -",
     ]
 
 
