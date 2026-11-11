@@ -38,7 +38,6 @@ Adresse und Telefon.
 
 ```ux-session
 $ pipx install git+https://github.com/smlfg/apotheken-notdienst-cli
-< notdienst
 $ notdienst jetzt heilbronn
 < Notdienst-Apotheken für heute (11.11.2026) in Heilbronn
 < 3 Treffer
